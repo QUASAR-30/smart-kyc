@@ -1,0 +1,61 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+*.log
+
+# Data (uploads, generated files)
+backend/data/uploads/*
+backend/data/badges/*
+backend/data/qrcodes/*
+backend/data/reports/*
+!backend/data/uploads/.gitkeep
+!backend/data/badges/.gitkeep
+!backend/data/qrcodes/.gitkeep
+!backend/data/reports/.gitkeep
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Fichiers de documentation et scripts locaux
+CLAUDE.md
+Demarrage_Rapide_SmartKYC.md
+Guide_Claude_Code_SmartKYC.md
+init_smartkyc_project.sh

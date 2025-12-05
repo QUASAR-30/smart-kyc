@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # DATABASE MYSQL
+  # ============================================
+  db:
+    image: mysql:8.0
+    container_name: smartkyc_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_change_me
+      MYSQL_DATABASE: smartkyc_db
+      MYSQL_USER: smartkyc_user
+      MYSQL_PASSWORD: smartkyc_password_change_me
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - smartkyc_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # BACKEND API (FastAPI)
+  # ============================================
+  # backend:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: smartkyc_backend
+  #   restart: unless-stopped
+  #   environment:
+  #     DATABASE_URL: mysql+pymysql://smartkyc_user:smartkyc_password_change_me@db:3306/smartkyc_db
+  #     SECRET_KEY: your-super-secret-key-change-me-in-production
+  #     ALGORITHM: HS256
+  #     ACCESS_TOKEN_EXPIRE_MINUTES: 60
+  #     APP_ENV: development
+  #     DEBUG: "true"
+  #     UPLOAD_DIR: /app/data/uploads
+  #     BADGE_DIR: /app/data/badges
+  #     QRCODE_DIR: /app/data/qrcodes
+  #     REPORT_DIR: /app/data/reports
+  #     GENUKA_API_URL: ${GENUKA_API_URL}
+  #     GENUKA_CLIENT_ID: ${GENUKA_CLIENT_ID}
+  #     GENUKA_CLIENT_SECRET: ${GENUKA_CLIENT_SECRET}
+  #     USE_MOCK_GENUKA: "true"
+  #   env_file:
+  #     - ./backend/.env
+  #   ports:
+  #     - "8000:8000"
+  #   volumes:
+  #     - ./backend:/app
+  #     - file_storage:/app/data
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - smartkyc_network
+  #   command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ============================================
+  # FRONTEND (React + Vite)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smartkyc_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - smartkyc_network
+    command: npm run dev -- --host 0.0.0.0
+
+volumes:
+  mysql_data:
+    driver: local
+  file_storage:
+    driver: local
+
+networks:
+  smartkyc_network:
+    driver: bridge
