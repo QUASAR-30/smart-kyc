@@ -23,7 +23,11 @@ class QRCodeGenerator:
     """
 
     # Base URL for verification (can be changed for production)
-    BASE_VERIFICATION_URL = "https://verify.smartkyc.cm/verify"
+    # Get base URL from env (e.g., https://xyz.ngrok-free.app/auth/callback -> https://xyz.ngrok-free.app)
+    import os
+    callback_url = os.getenv("VITE_BACKEND_CALLBACK_URL", "http://localhost:8000/auth/callback")
+    base_url = callback_url.replace("/auth/callback", "")
+    BASE_VERIFICATION_URL = f"{base_url}/verify"
 
     def __init__(self, output_dir: Optional[str] = None):
         """

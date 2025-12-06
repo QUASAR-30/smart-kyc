@@ -8,19 +8,30 @@ const api = axios.create({
   },
 });
 
-// 1. Intercepteur de REQUÊTE : Ajoute le Token automatiquement
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+import { fetchParameterByUrl } from '../utils/url';
+
+api.interceptors.request.use((config) => {
+
+  if (typeof window !== "undefined") {
+    const urlParams = new URLSearchParams(window.location.search);
+
+
+
+    const { hmac, timestamp, companyId } = fetchParameterByUrl(window.location.href);
+
+
+    if (hmac || timestamp || companyId) {
+      config.params = {
+        ...(config.params || {}),
+        ...(hmac && { hmac }),
+        ...(timestamp && { timestamp }),
+        ...(companyId && { company_id: companyId }),
+      };
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
   }
-);
+
+  return config;
+});
 
 // 2. Intercepteur de RÉPONSE : Gère l'expiration du Token
 api.interceptors.response.use(
@@ -30,7 +41,7 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       localStorage.removeItem('access_token');
       // Redirection brute vers login si nécessaire
-      window.location.href = '/'; 
+      window.location.href = '/';
     }
     return Promise.reject(error);
   }

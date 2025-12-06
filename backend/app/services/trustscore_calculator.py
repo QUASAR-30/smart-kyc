@@ -87,6 +87,10 @@ class TrustScoreCalculator:
                 orders = self.genuka_client.get_orders(access_token, months=12)
                 customers = self.genuka_client.get_customers(access_token)
                 # products = self.genuka_client.get_products(access_token) # Not implemented in client yet
+                
+                # PERSISTENCE: Save data to local DB
+                self._save_genuka_data(orders, customers)
+                
             except Exception as e:
                 print(f"⚠️ Error fetching Genuka data: {e}")
                 # Fallback to empty lists, will likely trigger COLD_START
@@ -99,6 +103,82 @@ class TrustScoreCalculator:
             return self._calculate_cold_start()
         else:
             return self._calculate_normal(orders, customers, products)
+
+    def _save_genuka_data(self, orders: List[Dict], customers: List[Dict]):
+        """
+        Save Genuka data to local database for persistence.
+        """
+        from app.models.genuka_data import GenukaOrder, GenukaCustomer
+        from datetime import datetime
+        
+        try:
+            # 1. Save Orders
+            for order_data in orders:
+                genuka_id = str(order_data.get('id'))
+                
+                # Check if exists
+                existing_order = self.db_session.query(GenukaOrder).filter(
+                    GenukaOrder.merchant_id == self.merchant_id,
+                    GenukaOrder.genuka_order_id == genuka_id
+                ).first()
+                
+                order_date_str = order_data.get('created_at') or order_data.get('order_date')
+                order_date = None
+                if order_date_str:
+                    try:
+                        order_date = datetime.fromisoformat(order_date_str.replace('Z', '+00:00'))
+                    except:
+                        pass
+
+                if existing_order:
+                    # Update
+                    existing_order.total = float(order_data.get('total', 0))
+                    existing_order.status = order_data.get('status')
+                    existing_order.synced_at = datetime.utcnow()
+                else:
+                    # Create
+                    new_order = GenukaOrder(
+                        merchant_id=self.merchant_id,
+                        genuka_order_id=genuka_id,
+                        total=float(order_data.get('total', 0)),
+                        status=order_data.get('status'),
+                        created_at=order_date,
+                        customer_id=str(order_data.get('customer_id')) if order_data.get('customer_id') else None,
+                        items=order_data.get('items', []),
+                        synced_at=datetime.utcnow()
+                    )
+                    self.db_session.add(new_order)
+            
+            # 2. Save Customers
+            for cust_data in customers:
+                genuka_id = str(cust_data.get('id'))
+                
+                existing_cust = self.db_session.query(GenukaCustomer).filter(
+                    GenukaCustomer.merchant_id == self.merchant_id,
+                    GenukaCustomer.genuka_customer_id == genuka_id
+                ).first()
+                
+                if existing_cust:
+                    existing_cust.orders_count = int(cust_data.get('orders_count', 0))
+                    existing_cust.total_spent = float(cust_data.get('total_spent', 0))
+                    existing_cust.synced_at = datetime.utcnow()
+                else:
+                    new_cust = GenukaCustomer(
+                        merchant_id=self.merchant_id,
+                        genuka_customer_id=genuka_id,
+                        name=cust_data.get('name'),
+                        orders_count=int(cust_data.get('orders_count', 0)),
+                        total_spent=float(cust_data.get('total_spent', 0)),
+                        synced_at=datetime.utcnow()
+                    )
+                    self.db_session.add(new_cust)
+            
+            self.db_session.commit()
+            print(f"✅ Saved {len(orders)} orders and {len(customers)} customers to DB")
+            
+        except Exception as e:
+            print(f"❌ Error saving Genuka data: {e}")
+            self.db_session.rollback()
 
     def _determine_calculation_mode(self, orders: List[Dict]) -> str:
         """
@@ -220,7 +300,7 @@ class TrustScoreCalculator:
             "calculation_mode": "COLD_START",
             "metrics": {
                 "documents": {
-                    "score": 100,  # Always 100 in COLD_START (only component)
+                    "score": int((doc_score / 650) * 100),  # Calculate percentage
                     "weight": 1.0,
                     "details": doc_details,
                     "total_verified": len(verified_docs),

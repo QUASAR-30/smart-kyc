@@ -24,7 +24,13 @@ app = FastAPI(
 )
 
 # Mount static files (logo, images, etc.)
+# Mount static files (logo, images, etc.)
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+# Mount data files (QR codes, badges)
+import os
+os.makedirs("data", exist_ok=True)
+app.mount("/data", StaticFiles(directory="data"), name="data")
 
 # CORS
 app.add_middleware(

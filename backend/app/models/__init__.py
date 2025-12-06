@@ -9,6 +9,7 @@ from app.models.trustscore import TrustScore, BadgeLevel as TrustScoreBadgeLevel
 from app.models.document import Document, DocumentType, VerificationStatus
 from app.models.badge import Badge, BadgeLevel
 from app.models.verification import Verification
+from app.models.genuka_data import GenukaOrder, GenukaCustomer
 
 __all__ = [
     # Base
@@ -20,6 +21,8 @@ __all__ = [
     "Document",
     "Badge",
     "Verification",
+    "GenukaOrder",
+    "GenukaCustomer",
 
     # Enums
     "SubscriptionTier",

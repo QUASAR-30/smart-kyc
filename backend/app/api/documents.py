@@ -58,24 +58,25 @@ async def upload_document(
         DocumentUploadResponse with verification results
     """
     # Validate file extension
+    print("1")
     file_ext = Path(file.filename).suffix.lower()
     if file_ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
         )
-
+    print("2")
     # Read file content
     content = await file.read()
     file_size = len(content)
-
+    print("3")
     # Validate file size
     if file_size > MAX_FILE_SIZE:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"File too large. Maximum size: {MAX_FILE_SIZE / (1024*1024):.1f}MB"
         )
-
+    print("4")
     # Create merchant-specific directory
     merchant_dir = UPLOAD_DIR / merchant.id / document_type.value
     merchant_dir.mkdir(parents=True, exist_ok=True)
@@ -84,17 +85,21 @@ async def upload_document(
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
     unique_filename = f"{document_type.value}_{timestamp}_{uuid.uuid4().hex[:8]}{file_ext}"
     filepath = merchant_dir / unique_filename
-
+    print("5")
     # Save file to disk
     try:
         with open(filepath, "wb") as f:
             f.write(content)
+            print("6")
     except Exception as e:
+        print("7")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            
             detail=f"Failed to save file: {str(e)}"
         )
-
+        
+    print("8")
     # Run OCR verification immediately
     verification_result = verify_document(
         filepath=str(filepath),
@@ -118,6 +123,13 @@ async def upload_document(
         extracted_data=json.dumps(verification_result.get('extracted_data', {})),
         uploaded_at=datetime.utcnow()
     )
+    document_type_str = document_type.value  # ex. "RCCM"
+
+    # Supprime l'ancien document
+    db.query(DocumentModel).filter(
+        DocumentModel.merchant_id == merchant.id,          # ✅ merchant.id, pas merchant_id non défini
+        DocumentModel.document_type == document_type_str   # ✅ chaîne pure
+    ).delete()
 
     db.add(document)
     db.commit()

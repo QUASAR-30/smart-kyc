@@ -216,19 +216,25 @@ def get_badge_share_info(
 
     trustscore_value = latest_trustscore.trustscore if latest_trustscore else 0
 
-    # Build share message
+    # Get base URL from env (e.g., https://xyz.ngrok-free.app/auth/callback -> https://xyz.ngrok-free.app)
+    import os
+    callback_url = os.getenv("VITE_BACKEND_CALLBACK_URL", "http://localhost:8000/auth/callback")
+    base_url = callback_url.replace("/auth/callback", "")
+    
+    verification_url = f"{base_url}/verify/{badge.verification_code}"
+
     share_message = (
         f"🏆 {merchant.business_name or 'Mon entreprise'} est certifié SmartKYC !\n\n"
         f"📊 TrustScore: {trustscore_value}/1000\n"
         f"🥇 Badge: {badge.badge_level.value}\n\n"
         f"Vérifiez notre badge de confiance:\n"
-        f"https://verify.smartkyc.cm/verify/{badge.verification_code}\n\n"
+        f"{verification_url}\n\n"
         f"#SmartKYC #B2BAfrica #TrustScore"
     )
 
     return BadgeShareInfo(
         verification_code=badge.verification_code,
-        verification_url=f"https://verify.smartkyc.cm/verify/{badge.verification_code}",
+        verification_url=verification_url,
         qr_code_url=f"/data/qrcodes/{merchant.id}/{badge.qr_code_image_path.split('/')[-1]}" if badge.qr_code_image_path else "",
         badge_image_url=f"/data/badges/{merchant.id}/{badge.badge_image_path.split('/')[-1]}" if badge.badge_image_path else "",
         share_message=share_message

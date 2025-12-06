@@ -54,13 +54,13 @@ def get_badge_color(badge_level: str) -> dict:
 def get_credit_recommendation(trustscore: int, badge_level: str) -> str:
     """Get credit recommendation based on TrustScore."""
     if trustscore >= 850 and badge_level == 'PLATINUM':
-        return "💎 Crédit recommandé jusqu'à 2,000,000 FCFA"
+        return "💎 Risque Très Faible. Crédit recommandé jusqu'à 2,000,000 FCFA"
     elif trustscore >= 700:
-        return "🥇 Crédit recommandé jusqu'à 800,000 FCFA"
+        return "🥇 Risque Faible. Crédit recommandé jusqu'à 800,000 FCFA"
     elif trustscore >= 550:
-        return "🥈 Crédit recommandé jusqu'à 400,000 FCFA"
+        return "🥈 Risque Modéré. Crédit recommandé jusqu'à 400,000 FCFA"
     elif trustscore >= 400:
-        return "🥉 Crédit recommandé jusqu'à 200,000 FCFA"
+        return "🥉 Risque Élevé. Crédit recommandé jusqu'à 200,000 FCFA"
     else:
         return "⚠️ Crédit non recommandé - Score insuffisant"
 
