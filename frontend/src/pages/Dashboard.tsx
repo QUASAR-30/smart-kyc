@@ -86,13 +86,14 @@ const Dashboard: React.FC = () => {
 
                 // 3. Fetch or Calculate TrustScore
                 try {
+                     const calcRes = await api.post('/api/trustscores/calculate');
+                        setData(calcRes.data);
                     const scoreRes = await api.get('/api/trustscores/latest');
                     setData(scoreRes.data);
                 } catch (e: any) {
                     if (e.response && e.response.status === 404) {
                         console.log("No score found, calculating...");
-                        const calcRes = await api.post('/api/trustscores/calculate');
-                        setData(calcRes.data);
+                       
                     } else {
                         throw e;
                     }
